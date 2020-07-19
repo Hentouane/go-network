@@ -49,28 +49,22 @@ func SetupCloseHandler() {
 
 func UseTCP(wg *sync.WaitGroup, address string) {
 	wg.Add(1)
-
 	serverReady := make(chan bool,1)
-
 	go T.StartTCPServer(wg, address, serverReady)
 
 	<- serverReady
 
 	wg.Add(1)
-
 	go T.StartTCPClient(wg, address)
 }
 
 func UseUDP(wg *sync.WaitGroup, address string) {
 	wg.Add(1)
-
 	serverReady := make(chan bool,1)
-
 	go U.StartUDPServer(wg, address, serverReady)
 
 	<- serverReady
 
 	wg.Add(1)
-
 	go U.StartUDPClient(wg, address)
 }
