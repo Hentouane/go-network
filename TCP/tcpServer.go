@@ -12,6 +12,8 @@ import (
 func StartTCPServer(wg *sync.WaitGroup, address string, serverReady chan bool) {
         defer wg.Done()
 
+        stopServer := make(chan bool)
+
         fmt.Println("Starting TCP Server...")
         
         l, err := net.Listen("tcp", address)
@@ -25,20 +27,26 @@ func StartTCPServer(wg *sync.WaitGroup, address string, serverReady chan bool) {
         fmt.Println("Server listening, sending signal to channel...")
         serverReady <- true
 
-        runTCPServer(l)
+        go runTCPServer(l, stopServer)
+
+        <- stopServer
+        
+        return
 }
 
-func runTCPServer(l net.Listener) {
-        c, err := l.Accept()
-        if err != nil {
-                fmt.Println(err)
-                return
+func runTCPServer(l net.Listener, stopServer chan bool) {
+        for {
+                c, err := l.Accept()
+                if err != nil {
+                        fmt.Println(err)
+                        return
+                }
+
+                go handleConnection(c, stopServer)
         }
-
-        handleConnection(c)
 }
 
-func handleConnection(c net.Conn) {
+func handleConnection(c net.Conn, stopServer chan bool) {
         for {
                 netData, err := bufio.NewReader(c).ReadString('\n')
                 if err != nil {
@@ -53,6 +61,7 @@ func handleConnection(c net.Conn) {
 
                 if strings.TrimSpace(string(netData)) == "STOP" {
                         fmt.Println("Exiting TCP server!")
+                        stopServer <- true
                         return
                 }
         }
